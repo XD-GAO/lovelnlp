@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>双模式单词学习系统</title>
+    <title>单词学习系统</title>
     <style>
         :root {
             --primary-color: #3aa3ff;
@@ -14,27 +14,29 @@
             background-color: #f8f9fa;
         }
         .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
             max-width: 1200px;
             margin: 0 auto;
         }
+        /* 首页样式 */
+        #homePage {
+            text-align: center;
+            padding: 50px 20px;
+        }
+        .mode-select button {
+            margin: 20px;
+            padding: 20px 40px;
+            font-size: 18px;
+        }
+        /* 模式面板通用样式 */
         .mode-panel {
             background: white;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             min-height: 500px;
+            display: none; /* 初始隐藏 */
         }
-        /* 左侧浏览模式样式 */
-        #browseMode {
-            grid-column: 1;
-        }
-        /* 右侧测试模式样式 */
-        #testMode {
-            grid-column: 2;
-        }
+        /* 浏览模式样式 */
         .word-list {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -47,21 +49,25 @@
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .word-item:hover {
-            transform: translateY(-3px);
+        .translation-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.9em;
+            padding: 5px 10px;
+            border-radius: 15px;
+            background: rgba(58, 163, 255, 0.1);
         }
+        /* 测试模式样式 */
         .test-card {
             text-align: center;
             padding: 40px;
             background: var(--secondary-color);
             border-radius: 15px;
             margin: 20px 0;
-        }
-        #currentWord {
-            font-size: 36px;
-            margin: 30px 0;
-            color: #2d3748;
         }
         #answer {
             opacity: 0;
@@ -74,54 +80,44 @@
             opacity: 1;
             max-height: 100px;
         }
-        .controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 30px;
-        }
-        button {
-            background: var(--primary-color);
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-        }
-        .hidden {
-            display: none;
+        .back-btn {
+            margin: 20px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 左侧浏览模式 -->
-        <div class="mode-panel" id="browseMode">
-            <h2 style="color: var(--primary-color);">📖 单词浏览</h2>
+        <!-- 首页 -->
+        <div id="homePage">
+            <h1 style="color: var(--primary-color); margin-bottom: 50px;">单词学习系统</h1>
+            <div class="mode-select">
+                <button onclick="showMode('browse')">📖 单词浏览</button>
+                <button onclick="showMode('test')">📝 记忆测试</button>
+            </div>
+        </div>
+
+        <!-- 浏览模式 -->
+        <div id="browseMode" class="mode-panel">
+            <h2 style="color: var(--primary-color);">单词浏览</h2>
+            <button class="back-btn" onclick="backToHome()">← 返回首页</button>
             <div class="word-list" id="wordList"></div>
             <div class="detail-view hidden" id="wordDetail">
                 <h3 id="detailWord"></h3>
                 <p id="detailTranslation"></p>
-                <button onclick="speakCurrentWord()">🔊 发音</button>
-                <button onclick="closeDetail()">✖️ 关闭</button>
+                <button onclick="closeDetail()">✖️ 关闭详情</button>
             </div>
         </div>
 
-        <!-- 右侧测试模式 -->
-        <div class="mode-panel" id="testMode">
-            <h2 style="color: var(--primary-color);">📝 记忆测试</h2>
+        <!-- 测试模式 -->
+        <div id="testMode" class="mode-panel">
+            <h2 style="color: var(--primary-color);">记忆测试</h2>
+            <button class="back-btn" onclick="backToHome()">← 返回首页</button>
             <div class="test-card">
                 <div id="currentWord"></div>
                 <div id="answer"></div>
                 <div class="controls">
                     <button onclick="showAnswer()">🔍 显示答案</button>
                     <button onclick="nextWord()">➡️ 换词</button>
-                    <button onclick="speakCurrentWord()">🔊 发音</button>
                 </div>
             </div>
         </div>
@@ -138,10 +134,20 @@
 
         let currentWord = null;
 
-        // 初始化页面
-        function initialize() {
-            renderWordList();
-            nextWord();
+        // 显示模式
+        function showMode(mode) {
+            document.getElementById('homePage').style.display = 'none';
+            document.getElementById(mode + 'Mode').style.display = 'block';
+            if(mode === 'browse') renderWordList();
+            if(mode === 'test') nextWord();
+        }
+
+        // 返回首页
+        function backToHome() {
+            document.getElementById('homePage').style.display = 'block';
+            document.querySelectorAll('.mode-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
         }
 
         // 测试模式功能
@@ -161,7 +167,10 @@
             const listContainer = document.getElementById('wordList');
             listContainer.innerHTML = presetWords.map(word => `
                 <div class="word-item" onclick="showWordDetail('${word.word}')">
-                    ${word.word}
+                    <span>${word.word}</span>
+                    <a href="https://fanyi.baidu.com/#en/zh/${encodeURIComponent(word.word)}" 
+                       class="translation-link" 
+                       target="_blank">百度翻译</a>
                 </div>
             `).join('');
         }
@@ -179,16 +188,10 @@
             document.getElementById('wordDetail').classList.add('hidden');
         }
 
-        // 通用功能
-        function speakCurrentWord() {
-            if (!currentWord) return;
-            const utterance = new SpeechSynthesisUtterance(currentWord.word);
-            utterance.lang = 'en-US';
-            speechSynthesis.speak(utterance);
-        }
-
-        // 页面加载后初始化
-        window.onload = initialize;
+        // 初始化
+        window.onload = () => {
+            document.getElementById('homePage').style.display = 'block';
+        };
     </script>
 </body>
 </html>
