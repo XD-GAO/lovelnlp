@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词学习系统</title>
+    <style>
+        :root {
+            --primary-color: #3aa3ff;
+            --secondary-color: #f0f9ff;
+        }
+        
+        body {
+            font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        /* 首页样式 */
+        #homePage {
+            text-align: center;
+            padding: 60px 15px;
+        }
+        
+        #homePage h1 {
+            font-size: 1.8em;
+            color: var(--primary-color);
+            margin-bottom: 40px;
+        }
+        
+        .mode-select {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .mode-select button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .mode-select button:hover {
+            background-color: #2a8cff;
+        }
+        
+        /* 浏览模式样式 */
+        #browseMode {
+            padding: 20px 15px;
+        }
+        
+        h2 {
+            font-size: 1.4em;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 1em;
+            cursor: pointer;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .word-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .word-item {
+            padding: 15px;
+            font-size: 1em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .word-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .word-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        
+        .word-translation {
+            color: #666;
+            font-size: 1em;
+        }
+        
+        .pronounce-btn {
+            background: none;
+            border: none;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .pronounce-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--primary-color);
+        }
+        
+        /* 测试模式样式 */
+        #testMode {
+            padding: 20px 15px;
+        }
+        
+        .test-card {
+            padding: 20px;
+            font-size: 1em;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        #currentWord {
+            font-size: 1.8em;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        #answer {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .controls button {
+            padding: 12px;
+            font-size: 0.9em;
+            border-radius: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        
+        /* 响应式设计 */
+        @media (min-width: 768px) {
+            #homePage h1 {
+                font-size: 2.5em;
+            }
+            
+            .mode-select button {
+                font-size: 1.2em;
+                padding: 25px 50px;
+            }
+            
+            .word-item {
+                font-size: 1.2em;
+            }
+            
+            #currentWord {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 首页 -->
+        <div id="homePage">
+            <h1>单词学习系统</h1>
+            <div class="mode-select">
+                <button onclick="showMode('browse')">📖 单词浏览</button>
+                <button onclick="showMode('test')">📝 记忆测试</button>
+            </div>
+        </div>
+
+        <!-- 浏览模式 -->
+        <div id="browseMode" class="mode-panel" style="display: none;">
+            <h2>单词浏览</h2>
+            <button class="back-btn" onclick="backToHome()">← 返回首页</button>
+            <div class="word-list" id="wordList"></div>
+        </div>
+
+        <!-- 测试模式 -->
+        <div id="testMode" class="mode-panel" style="display: none;">
+            <h2>记忆测试</h2>
+            <button class="back-btn" onclick="backToHome()">← 返回首页</button>
+            <div class="test-card">
+                <div id="currentWord"></div>
+                <div id="answer"></div>
+                <div class="controls">
+                    <button onclick="showAnswer()">🔍 显示答案</button>
+                    <button onclick="nextWord()">➡️ 换词</button>
+                    <button onclick="speakCurrentWord('en-GB')">🔊 英式发音</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const presetWords = [
+            { word: "apple", translation: "苹果" },
+            { word: "go", translation: "走" },
+            { word: "easy", translation: "简单" },
+            { word: "hard", translation: "难" }
+        ];
+
+        let currentWord = null;
+
+        // 发音功能
+        function speakWord(word, accent = 'en-GB') {
+            const synth = window.speechSynthesis;
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = accent;
+            
+            // 尝试获取英式发音
+            const voices = synth.getVoices();
+            const ukVoice = voices.find(voice => 
+                voice.lang === 'en-GB' && voice.name.includes('Male')
+            );
+            
+            if(ukVoice) {
+                utterance.voice = ukVoice;
+                utterance.lang = 'en-GB';
+            }
+            
+            synth.speak(utterance);
+        }
+
+        // 浏览模式列表渲染
+        function renderWordList() {
+            const listContainer = document.getElementById('wordList');
+            listContainer.innerHTML = presetWords.map(word => `
+                <div class="word-item">
+                    <div class="word-info">
+                        <span class="word-name">${word.word}</span>
+                        <span class="word-translation">${word.translation}</span>
+                    </div>
+                    <button class="pronounce-btn" 
+                            onclick="speakWord('${word.word}', 'en-GB')"
+                            title="英式发音">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // 初始化时加载语音
+        window.speechSynthesis.onvoiceschanged = function() {
+            if(window.speechSynthesis.getVoices().length > 0) {
+                renderWordList();
+            }
+        };
+
+        // 显示答案
+        function showAnswer() {
+            const answerElement = document.getElementById('answer');
+            answerElement.textContent = currentWord.translation;
+        }
+
+        // 换词
+        function nextWord() {
+            const answerElement = document.getElementById('answer');
+            answerElement.textContent = '';
+            
+            currentWord = presetWords[Math.floor(Math.random() * presetWords.length)];
+            document.getElementById('currentWord').textContent = currentWord.word;
+        }
+
+        // 显示当前单词的发音
+        function speakCurrentWord(accent) {
+            if (currentWord) {
+                speakWord(currentWord.word, accent);
+            }
+        }
+
+        // 切换模式
+        function showMode(mode) {
+            document.getElementById('homePage').style.display = 'none';
+            document.getElementById('browseMode').style.display = 'none';
+            document.getElementById('testMode').style.display = 'none';
+            
+            document.getElementById(mode + 'Mode').style.display = 'block';
+            
+            if (mode === 'test') {
+                nextWord();
+            } else if (mode === 'browse') {
+                renderWordList();
+            }
+        }
+
+        // 返回首页
+        function backToHome() {
+            document.getElementById('homePage').style.display = 'block';
+            document.getElementById('browseMode').style.display = 'none';
+            document.getElementById('testMode').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
