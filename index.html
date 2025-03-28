@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>双模式单词学习系统</title>
+    <style>
+        :root {
+            --primary-color: #3aa3ff;
+            --secondary-color: #f0f9ff;
+        }
+        body {
+            font-family: "微软雅黑", sans-serif;
+            margin: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .mode-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-height: 500px;
+        }
+        /* 左侧浏览模式样式 */
+        #browseMode {
+            grid-column: 1;
+        }
+        /* 右侧测试模式样式 */
+        #testMode {
+            grid-column: 2;
+        }
+        .word-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .word-item {
+            padding: 15px;
+            background: var(--secondary-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .word-item:hover {
+            transform: translateY(-3px);
+        }
+        .test-card {
+            text-align: center;
+            padding: 40px;
+            background: var(--secondary-color);
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        #currentWord {
+            font-size: 36px;
+            margin: 30px 0;
+            color: #2d3748;
+        }
+        #answer {
+            opacity: 0;
+            max-height: 0;
+            transition: all 0.3s ease;
+            color: #2d8cdb;
+            font-size: 24px;
+        }
+        #answer.reveal {
+            opacity: 1;
+            max-height: 100px;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        button {
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧浏览模式 -->
+        <div class="mode-panel" id="browseMode">
+            <h2 style="color: var(--primary-color);">📖 单词浏览</h2>
+            <div class="word-list" id="wordList"></div>
+            <div class="detail-view hidden" id="wordDetail">
+                <h3 id="detailWord"></h3>
+                <p id="detailTranslation"></p>
+                <button onclick="speakCurrentWord()">🔊 发音</button>
+                <button onclick="closeDetail()">✖️ 关闭</button>
+            </div>
+        </div>
+
+        <!-- 右侧测试模式 -->
+        <div class="mode-panel" id="testMode">
+            <h2 style="color: var(--primary-color);">📝 记忆测试</h2>
+            <div class="test-card">
+                <div id="currentWord"></div>
+                <div id="answer"></div>
+                <div class="controls">
+                    <button onclick="showAnswer()">🔍 显示答案</button>
+                    <button onclick="nextWord()">➡️ 换词</button>
+                    <button onclick="speakCurrentWord()">🔊 发音</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 预置单词库
+        const presetWords = [
+            { word: "apple", translation: "苹果" },
+            { word: "go", translation: "走" },
+            { word: "easy", translation: "简单" },
+            { word: "hard", translation: "难" }
+        ];
+
+        let currentWord = null;
+
+        // 初始化页面
+        function initialize() {
+            renderWordList();
+            nextWord();
+        }
+
+        // 测试模式功能
+        function nextWord() {
+            currentWord = presetWords[Math.floor(Math.random() * presetWords.length)];
+            document.getElementById('currentWord').textContent = currentWord.word;
+            document.getElementById('answer').textContent = currentWord.translation;
+            document.getElementById('answer').classList.remove('reveal');
+        }
+
+        function showAnswer() {
+            document.getElementById('answer').classList.add('reveal');
+        }
+
+        // 浏览模式功能
+        function renderWordList() {
+            const listContainer = document.getElementById('wordList');
+            listContainer.innerHTML = presetWords.map(word => `
+                <div class="word-item" onclick="showWordDetail('${word.word}')">
+                    ${word.word}
+                </div>
+            `).join('');
+        }
+
+        function showWordDetail(word) {
+            currentWord = presetWords.find(item => item.word === word);
+            document.getElementById('wordList').classList.add('hidden');
+            document.getElementById('wordDetail').classList.remove('hidden');
+            document.getElementById('detailWord').textContent = currentWord.word;
+            document.getElementById('detailTranslation').textContent = currentWord.translation;
+        }
+
+        function closeDetail() {
+            document.getElementById('wordList').classList.remove('hidden');
+            document.getElementById('wordDetail').classList.add('hidden');
+        }
+
+        // 通用功能
+        function speakCurrentWord() {
+            if (!currentWord) return;
+            const utterance = new SpeechSynthesisUtterance(currentWord.word);
+            utterance.lang = 'en-US';
+            speechSynthesis.speak(utterance);
+        }
+
+        // 页面加载后初始化
+        window.onload = initialize;
+    </script>
+</body>
+</html>
