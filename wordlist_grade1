@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词学习系统</title>
+    <style>
+        :root {
+            --primary-color: #3aa3ff;
+            --secondary-color: #f0f9ff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "微软雅黑", sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        /* 首页样式 */
+        #homePage {
+            text-align: center;
+            padding: 30px 15px;
+        }
+
+        #homePage h1 {
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+        }
+
+        .mode-select {
+            display: grid;
+            gap: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .mode-select button {
+            padding: 1rem;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* 通用面板样式 */
+        .mode-panel {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: none; /* 初始隐藏 */
+        }
+
+        /* 浏览模式 */
+        .word-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .word-item {
+            padding: 1rem;
+            background: var(--secondary-color);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .func-buttons {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+        }
+
+        .pronounce-btn {
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%233aa3ff"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>') center/contain no-repeat;
+            width: 24px;
+            height: 24px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .translation-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            background: rgba(58, 163, 255, 0.1);
+        }
+
+        /* 测试模式 */
+        .test-card {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: var(--secondary-color);
+            border-radius: 8px;
+        }
+
+        #currentWord {
+            font-size: 1.8rem;
+            margin: 1rem 0;
+            word-break: break-word;
+        }
+
+        #answer {
+            opacity: 0;
+            max-height: 0;
+            transition: all 0.3s ease;
+            margin: 1rem 0;
+        }
+
+        #answer.reveal {
+            opacity: 1;
+            max-height: 200px;
+        }
+
+        .controls {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 首页 -->
+        <div id="homePage">
+            <h1>单词学习系统</h1>
+            <div class="mode-select">
+                <button onclick="showMode('browse')">📖 单词浏览</button>
+                <button onclick="showMode('test')">📝 记忆测试</button>
+            </div>
+        </div>
+
+        <!-- 浏览模式 -->
+        <div id="browseMode" class="mode-panel">
+            <button class="btn" onclick="backToHome()">← 返回首页</button>
+            <div class="word-list" id="wordList"></div>
+        </div>
+
+        <!-- 测试模式 -->
+        <div id="testMode" class="mode-panel">
+            <button class="btn" onclick="backToHome()">← 返回首页</button>
+            <div class="test-card">
+                <div id="currentWord"></div>
+                <div id="answer"></div>
+                <div class="controls">
+                    <button class="btn" onclick="showAnswer()">🔍 显示答案</button>
+                    <button class="btn" onclick="nextWord()">➡️ 换词</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 预置单词库
+        const presetWords = [
+            { word: "apple", translation: "苹果" },
+            { word: "go", translation: "走" },
+            { word: "easy", translation: "简单" },
+            { word: "hard", translation: "难" }
+        ];
+
+        let currentWord = null;
+        let synth = window.speechSynthesis;
+
+        // 核心功能
+        function showMode(mode) {
+            document.getElementById('homePage').style.display = 'none';
+            document.getElementById('browseMode').style.display = 'none';
+            document.getElementById('testMode').style.display = 'none';
+            
+            const targetPanel = document.getElementById(mode + 'Mode');
+            targetPanel.style.display = 'block';
+            
+            if (mode === 'browse') renderWordList();
+            if (mode === 'test') nextWord();
+        }
+
+        function backToHome() {
+            document.getElementById('homePage').style.display = 'block';
+            document.getElementById('browseMode').style.display = 'none';
+            document.getElementById('testMode').style.display = 'none';
+        }
+
+        function nextWord() {
+            currentWord = presetWords[Math.floor(Math.random() * presetWords.length)];
+            document.getElementById('currentWord').textContent = currentWord.word;
+            document.getElementById('answer').innerHTML = `
+                <div class="func-buttons">
+                    <span>${currentWord.translation}</span>
+                    <button class="pronounce-btn" onclick="speak('${currentWord.word}')"></button>
+                    <a href="https://fanyi.baidu.com/#en/zh/${encodeURIComponent(currentWord.word)}" 
+                       class="translation-link" 
+                       target="_blank">翻译详情</a>
+                </div>
+            `;
+            document.getElementById('answer').classList.remove('reveal');
+        }
+
+        function showAnswer() {
+            document.getElementById('answer').classList.add('reveal');
+        }
+
+        function renderWordList() {
+            const listContainer = document.getElementById('wordList');
+            listContainer.innerHTML = presetWords.map(word => `
+                <div class="word-item">
+                    <span>${word.word}</span>
+                    <div class="func-buttons">
+                        <span>${word.translation}</span>
+                        <button class="pronounce-btn" onclick="speak('${word.word}')"></button>
+                        <a href="https://fanyi.baidu.com/#en/zh/${encodeURIComponent(word.word)}" 
+                           class="translation-link" 
+                           target="_blank">翻译详情</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function speak(word) {
+            if (synth.speaking) synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = 'en-GB';
+            synth.speak(utterance);
+        }
+
+        // 初始化
+        window.onload = () => {
+            document.getElementById('homePage').style.display = 'block';
+        };
+    </script>
+</body>
+</html>
